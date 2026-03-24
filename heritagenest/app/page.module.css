@@ -1,0 +1,196 @@
+/* ── Hero ─────────────────────────────────── */
+.hero {
+  position: relative;
+  min-height: 520px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: linear-gradient(135deg, #2C0A00 0%, #5C1A0A 40%, #7B1C1C 70%, #3D1A00 100%);
+}
+
+.heroOverlay {
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(circle at 20% 50%, rgba(201,146,42,0.15) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(193,96,58,0.12) 0%, transparent 40%);
+  pointer-events: none;
+}
+
+/* Decorative mandala-like pattern */
+.hero::before {
+  content: "";
+  position: absolute;
+  right: -100px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 500px;
+  height: 500px;
+  border-radius: 50%;
+  border: 1px solid rgba(201,146,42,0.1);
+  box-shadow: 0 0 0 40px rgba(201,146,42,0.04), 0 0 0 80px rgba(201,146,42,0.03), 0 0 0 120px rgba(201,146,42,0.02);
+}
+
+.heroContent {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  padding: 60px 24px;
+  max-width: 780px;
+  margin: 0 auto;
+}
+
+.heroBadge {
+  display: inline-block;
+  background: rgba(201,146,42,0.2);
+  border: 1px solid rgba(201,146,42,0.4);
+  color: var(--secondary-light);
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 6px 16px;
+  border-radius: 20px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-bottom: 20px;
+}
+
+.heroTitle {
+  font-family: var(--font-heading);
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.2;
+  margin-bottom: 16px;
+  letter-spacing: -0.02em;
+}
+
+.heroSub {
+  font-size: 1.05rem;
+  color: rgba(255,255,255,0.7);
+  line-height: 1.6;
+  margin-bottom: 36px;
+  max-width: 560px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.searchBar {
+  display: flex;
+  align-items: center;
+  background: #fff;
+  border-radius: var(--radius-md);
+  padding: 6px 6px 6px 20px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+  max-width: 560px;
+  margin: 0 auto;
+  gap: 8px;
+}
+
+.searchBar input {
+  flex: 1;
+  border: none;
+  background: none;
+  font-size: 0.95rem;
+  color: var(--text-dark);
+  padding: 8px 0;
+}
+
+.searchBar input::placeholder { color: var(--text-light); }
+
+.clearBtn {
+  background: none;
+  border: none;
+  color: var(--text-light);
+  font-size: 0.9rem;
+  padding: 4px 8px;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.clearBtn:hover { color: var(--text-dark); }
+
+.searchBtn {
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  padding: 10px 22px;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.2s;
+  white-space: nowrap;
+}
+.searchBtn:hover { background: var(--primary-light); }
+
+/* ── Filter Bar ──────────────────────────── */
+.filterBar {
+  background: #fff;
+  border-bottom: 1px solid var(--border);
+  padding: 14px 0;
+  position: sticky;
+  top: var(--nav-height);
+  z-index: 50;
+}
+
+.filterInner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.filterInner select {
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 14px;
+  font-size: 0.88rem;
+  color: var(--text-dark);
+  background: var(--bg);
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+.filterInner select:focus { border-color: var(--primary); }
+
+.clearFilters {
+  background: none;
+  border: 1.5px solid var(--accent);
+  color: var(--accent);
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.clearFilters:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
+/* ── Gallery ─────────────────────────────── */
+.gallery {
+  padding: 48px 0 80px;
+}
+
+.galleryHeader {
+  margin-bottom: 32px;
+}
+
+.empty {
+  text-align: center;
+  padding: 80px 24px;
+  color: var(--text-light);
+}
+.empty span { font-size: 3rem; display: block; margin-bottom: 16px; }
+.empty p { font-size: 1rem; }
+
+.loadMore {
+  text-align: center;
+  margin-top: 48px;
+}
+
+@media (max-width: 768px) {
+  .filterInner select { flex: 1; min-width: 130px; }
+  .hero { min-height: 420px; }
+}
