@@ -1,0 +1,111 @@
+.container {
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.header h2 {
+  margin: 0;
+  color: #2c3e50;
+}
+
+.addBtn {
+  background-color: #27ae60;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 4px;
+  text-decoration: none;
+  transition: background-color 0.3s;
+}
+
+.addBtn:hover {
+  background-color: #229954;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+
+.table th {
+  background-color: #ecf0f1;
+  padding: 12px;
+  text-align: left;
+  border-bottom: 2px solid #bdc3c7;
+  font-weight: bold;
+  color: #2c3e50;
+}
+
+.table td {
+  padding: 12px;
+  border-bottom: 1px solid #ecf0f1;
+}
+
+.table tbody tr:hover {
+  background-color: #f9f9f9;
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+}
+
+.editBtn {
+  background-color: #3498db;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 4px;
+  text-decoration: none;
+  font-size: 12px;
+  transition: background-color 0.3s;
+}
+
+.editBtn:hover {
+  background-color: #2980b9;
+}
+
+.deleteBtn {
+  background-color: #e74c3c;
+  color: white;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.deleteBtn:hover {
+  background-color: #c0392b;
+}
+
+.error {
+  color: #e74c3c;
+  padding: 20px;
+  background-color: #fadbd8;
+  border-radius: 4px;
+}
+
+@media (max-width: 768px) {
+  .table {
+    font-size: 12px;
+  }
+
+  .table td,
+  .table th {
+    padding: 8px;
+  }
+
+  .actions {
+    flex-direction: column;
+  }
+}
