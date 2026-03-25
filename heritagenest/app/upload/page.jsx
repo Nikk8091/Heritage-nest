@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "../../context/AuthContext";
 import { uploadMediaFile } from "../../lib/storageService";
@@ -12,7 +12,7 @@ const INITIAL_FORM = {
   category: "", art_form: "", community: "", tags: "",
 };
 
-export default function UploadPage() {
+function UploadPageContent() {
   const { user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -378,5 +378,13 @@ export default function UploadPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function UploadPage() {
+  return (
+    <Suspense fallback={<div className="loading-spinner" style={{ marginTop: 80 }} />}>
+      <UploadPageContent />
+    </Suspense>
   );
 }
