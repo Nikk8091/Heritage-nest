@@ -2,36 +2,107 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper: check if user is admin
-    function isAdmin() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    function isSignedIn() {
+      return request.auth != null;
     }
 
-    // artItems — public read, auth write, admin full control
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Helper: check if user is admin from users collection
+    function isAdmin() {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    }
+
+    function validArtItem(data) {
+      return data.keys().hasAll([
+          'title', 'state', 'category', 'media_url', 'media_type',
+          'user_id', 'created_at', 'views'
+        ])
+        && data.keys().hasOnly([
+          'title', 'description', 'state', 'district', 'art_form', 'community',
+          'category', 'media_url', 'media_type', 'tags', 'user_id',
+          'created_at', 'updated_at', 'views', 'is_short', 'duration_seconds',
+          'moderation_status', 'reviewed_at', 'reviewed_by'
+        ])
+        && data.title is string && data.title.size() > 0 && data.title.size() <= 140
+        && data.state is string && data.state.size() > 0
+        && data.category is string && data.category.size() > 0
+        && data.media_url is string && data.media_url.size() > 0
+        && data.media_type is string && data.media_type in ['image', 'video', 'audio']
+        && (!('moderation_status' in data) || data.moderation_status in ['pending', 'approved', 'rejected'])
+        && data.user_id is string && data.user_id.size() > 0
+        && data.views is int
+        && (!('is_short' in data) || data.is_short is bool)
+        && (!('duration_seconds' in data) || data.duration_seconds is int || data.duration_seconds == null)
+        && (!('reviewed_by' in data) || data.reviewed_by is string || data.reviewed_by == null)
+        && (!('description' in data) || data.description is string)
+        && (!('district' in data) || data.district is string)
+        && (!('art_form' in data) || data.art_form is string)
+        && (!('community' in data) || data.community is string)
+        && (!('tags' in data) || (data.tags is list && data.tags.size() <= 30));
+    }
+
+    function validUserCreate(data, userId) {
+      return data.keys().hasAll(['uid', 'email', 'displayName', 'saved', 'created_at'])
+        && data.keys().hasOnly(['uid', 'email', 'displayName', 'photoURL', 'saved', 'created_at', 'isAdmin'])
+        && data.uid == userId
+        && data.email is string
+        && data.displayName is string && data.displayName.size() > 0
+        && data.saved is list
+        && (!('isAdmin' in data) || data.isAdmin == false);
+    }
+
+    function validOwnerUserUpdate(data, previousData, userId) {
+      return data.keys().hasOnly(['uid', 'email', 'displayName', 'photoURL', 'saved', 'created_at', 'isAdmin'])
+        && data.uid == userId
+        && data.uid == previousData.uid
+        && data.email == previousData.email
+        && data.created_at == previousData.created_at
+        && data.displayName is string
+        && data.saved is list
+        && data.isAdmin == previousData.isAdmin;
+    }
+
+    // artItems: public read, owner/admin mutation
     match /artItems/{itemId} {
       allow read: if true;
-      allow create: if request.auth != null
+      allow create: if isSignedIn()
         && request.resource.data.user_id == request.auth.uid
-        && request.resource.data.title is string
-        && request.resource.data.title.size() > 0;
-      allow update: if request.auth != null && (
-        resource.data.user_id == request.auth.uid || isAdmin()
-      );
-      allow delete: if request.auth != null && (
+        && (!('moderation_status' in request.resource.data) || request.resource.data.moderation_status == 'pending' || isAdmin())
+        && validArtItem(request.resource.data);
+      allow update: if validArtItem(request.resource.data)
+        && (
+          isAdmin()
+          || (
+            isSignedIn()
+            && resource.data.user_id == request.auth.uid
+            && request.resource.data.user_id == resource.data.user_id
+            && request.resource.data.created_at == resource.data.created_at
+            && request.resource.data.moderation_status == resource.data.moderation_status
+            && request.resource.data.reviewed_at == resource.data.reviewed_at
+            && request.resource.data.reviewed_by == resource.data.reviewed_by
+          )
+        );
+      allow delete: if isSignedIn() && (
         resource.data.user_id == request.auth.uid || isAdmin()
       );
     }
 
-    // users — owner read/write + admin read
+    // users: owner read/update, admin can manage
     match /users/{userId} {
-      allow read: if request.auth != null && (
+      allow read: if isSignedIn() && (
         request.auth.uid == userId || isAdmin()
       );
-      allow create: if request.auth != null && request.auth.uid == userId;
-      allow update: if request.auth != null && (
-        request.auth.uid == userId || isAdmin()
-      );
-      allow delete: if request.auth != null && isAdmin();
+      allow create: if isOwner(userId)
+        && validUserCreate(request.resource.data, userId);
+      allow update: if (
+        isOwner(userId) && validOwnerUserUpdate(request.resource.data, resource.data, userId)
+      ) || isAdmin();
+      allow delete: if isAdmin();
     }
   }
 }

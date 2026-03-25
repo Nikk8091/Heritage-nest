@@ -2,9 +2,11 @@ import { supabase, BUCKET_NAME } from "./supabase";
 
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
 const MAX_VIDEO_SIZE = 100 * 1024 * 1024; // 100MB
+const MAX_AUDIO_SIZE = 20 * 1024 * 1024; // 20MB
 
 const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 const ALLOWED_VIDEO_TYPES = ["video/mp4", "video/webm", "video/ogg"];
+const ALLOWED_AUDIO_TYPES = ["audio/mpeg", "audio/wav", "audio/ogg", "audio/mp4", "audio/x-m4a"];
 
 export function validateFile(file) {
   if (ALLOWED_IMAGE_TYPES.includes(file.type)) {
@@ -15,7 +17,14 @@ export function validateFile(file) {
     if (file.size > MAX_VIDEO_SIZE) return { valid: false, error: "Video must be under 100MB" };
     return { valid: true, mediaType: "video" };
   }
-  return { valid: false, error: "Unsupported file type. Use JPEG, PNG, WebP, MP4, or WebM." };
+  if (ALLOWED_AUDIO_TYPES.includes(file.type)) {
+    if (file.size > MAX_AUDIO_SIZE) return { valid: false, error: "Audio must be under 20MB" };
+    return { valid: true, mediaType: "audio" };
+  }
+  return {
+    valid: false,
+    error: "Unsupported file type. Use JPEG, PNG, WebP, MP4, WebM, MP3, WAV, or OGG.",
+  };
 }
 
 export async function uploadMediaFile(file, userId, onProgress) {

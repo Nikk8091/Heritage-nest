@@ -1,8 +1,9 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { updateArtItem, deleteArtItem } from "@/lib/dbService";
 import { uploadMediaFile } from "@/lib/storageService";
+import { ART_FORMS, CATEGORIES, COMMUNITIES, INDIAN_STATES } from "@/lib/constants";
 import styles from "./AdminManageModal.module.css";
 
 export default function AdminManageModal({ item, isOpen, onClose, onUpdate }) {
@@ -19,9 +20,29 @@ export default function AdminManageModal({ item, isOpen, onClose, onUpdate }) {
     category: item.category || "",
     tags: item.tags?.join(", ") || "",
   });
-  const [imageFile, setImageFile] = useState(null);
-  const [imagePreview, setImagePreview] = useState(item.media_url || "");
+  const [mediaFile, setMediaFile] = useState(null);
+  const [mediaPreview, setMediaPreview] = useState(item.media_url || "");
+  const [mediaPreviewType, setMediaPreviewType] = useState(item.media_type || "image");
   const [uploadProgress, setUploadProgress] = useState(0);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setFormData({
+      title: item.title || "",
+      description: item.description || "",
+      art_form: item.art_form || "",
+      state: item.state || "",
+      district: item.district || "",
+      community: item.community || "",
+      category: item.category || "",
+      tags: item.tags?.join(", ") || "",
+    });
+    setMediaFile(null);
+    setMediaPreview(item.media_url || "");
+    setMediaPreviewType(item.media_type || "image");
+    setError(null);
+    setUploadProgress(0);
+  }, [item, isOpen]);
 
   if (!isOpen) return null;
 
@@ -30,13 +51,20 @@ export default function AdminManageModal({ item, isOpen, onClose, onUpdate }) {
     setFormData({ ...formData, [name]: value });
   };
 
-  const handleImageChange = (e) => {
+  const handleMediaChange = (e) => {
     const file = e.target.files?.[0];
     if (file) {
-      setImageFile(file);
+      setMediaFile(file);
+      if (file.type.startsWith("video")) {
+        setMediaPreviewType("video");
+      } else if (file.type.startsWith("audio")) {
+        setMediaPreviewType("audio");
+      } else {
+        setMediaPreviewType("image");
+      }
       const reader = new FileReader();
       reader.onloadend = () => {
-        setImagePreview(reader.result);
+        setMediaPreview(reader.result);
       };
       reader.readAsDataURL(file);
     }
@@ -51,11 +79,11 @@ export default function AdminManageModal({ item, isOpen, onClose, onUpdate }) {
       let mediaUrl = item.media_url;
       let mediaType = item.media_type;
 
-      // Upload new image if selected
-      if (imageFile) {
-        console.log("📤 Uploading image...");
+      // Upload new media if selected
+      if (mediaFile) {
+        console.log("📤 Uploading media...");
         const { url, mediaType: type, error: uploadError } = await uploadMediaFile(
-          imageFile,
+          mediaFile,
           user.uid,
           setUploadProgress
         );
@@ -68,7 +96,7 @@ export default function AdminManageModal({ item, isOpen, onClose, onUpdate }) {
 
         mediaUrl = url;
         mediaType = type;
-        console.log("✅ Image uploaded:", mediaUrl);
+        console.log("✅ Media uploaded:", mediaUrl);
       }
 
       // Update item in database
@@ -76,7 +104,10 @@ export default function AdminManageModal({ item, isOpen, onClose, onUpdate }) {
         ...formData,
         media_url: mediaUrl,
         media_type: mediaType,
-        tags: formData.tags.split(",").map((tag) => tag.trim()),
+        tags: formData.tags
+          .split(",")
+          .map((tag) => tag.trim().toLowerCase())
+          .filter(Boolean),
       };
 
       const { error: updateError } = await updateArtItem(item.id, updateData);
@@ -137,21 +168,27 @@ export default function AdminManageModal({ item, isOpen, onClose, onUpdate }) {
         {error && <div className={styles.error}>{error}</div>}
 
         <form onSubmit={handleSave} className={styles.form}>
-          {/* Image Upload */}
+          {/* Media Upload */}
           <div className={styles.imageSection}>
             <div className={styles.imagePreview}>
-              {imagePreview ? (
-                <img src={imagePreview} alt="Preview" />
+              {mediaPreview ? (
+                mediaPreviewType === "video" ? (
+                  <video src={mediaPreview} className={styles.mediaPreview} controls />
+                ) : mediaPreviewType === "audio" ? (
+                  <audio src={mediaPreview} className={styles.audioPreview} controls />
+                ) : (
+                  <img src={mediaPreview} alt="Preview" />
+                )
               ) : (
-                <div className={styles.placeholder}>No image</div>
+                <div className={styles.placeholder}>No media</div>
               )}
             </div>
             <label className={styles.uploadLabel}>
-              📤 Upload New Image
+              📤 Upload New Media
               <input
                 type="file"
-                accept="image/*"
-                onChange={handleImageChange}
+                accept="image/*,video/*,audio/*"
+                onChange={handleMediaChange}
                 disabled={loading}
               />
             </label>
@@ -197,37 +234,42 @@ export default function AdminManageModal({ item, isOpen, onClose, onUpdate }) {
                 disabled={loading}
               >
                 <option value="">Select</option>
-                <option value="Dance">Dance</option>
-                <option value="Music">Music</option>
-                <option value="Craft">Craft</option>
-                <option value="Festival">Festival</option>
-                <option value="Cuisine">Cuisine</option>
-                <option value="Architecture">Architecture</option>
+                {CATEGORIES.map((category) => (
+                  <option key={category} value={category}>{category}</option>
+                ))}
               </select>
             </div>
 
             <div className={styles.formGroup}>
               <label>Art Form</label>
-              <input
-                type="text"
+              <select
                 name="art_form"
                 value={formData.art_form}
                 onChange={handleChange}
                 disabled={loading}
-              />
+              >
+                <option value="">Select</option>
+                {ART_FORMS.map((artForm) => (
+                  <option key={artForm} value={artForm}>{artForm}</option>
+                ))}
+              </select>
             </div>
           </div>
 
           <div className={styles.twoColumn}>
             <div className={styles.formGroup}>
               <label>State</label>
-              <input
-                type="text"
+              <select
                 name="state"
                 value={formData.state}
                 onChange={handleChange}
                 disabled={loading}
-              />
+              >
+                <option value="">Select</option>
+                {INDIAN_STATES.map((state) => (
+                  <option key={state} value={state}>{state}</option>
+                ))}
+              </select>
             </div>
 
             <div className={styles.formGroup}>
@@ -244,13 +286,17 @@ export default function AdminManageModal({ item, isOpen, onClose, onUpdate }) {
 
           <div className={styles.formGroup}>
             <label>Community</label>
-            <input
-              type="text"
+            <select
               name="community"
               value={formData.community}
               onChange={handleChange}
               disabled={loading}
-            />
+            >
+              <option value="">Select</option>
+              {COMMUNITIES.map((community) => (
+                <option key={community} value={community}>{community}</option>
+              ))}
+            </select>
           </div>
 
           <div className={styles.formGroup}>

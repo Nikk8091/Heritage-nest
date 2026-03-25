@@ -73,9 +73,44 @@ NEXT_PUBLIC_FIREBASE_APP_ID
 NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
 NEXT_PUBLIC_SUPABASE_URL
 NEXT_PUBLIC_SUPABASE_ANON_KEY
+AI_PROVIDER
+GROQ_API_KEY
+GROQ_MODEL
 ```
 
 4. Click **Deploy** ✅
+
+---
+
+## 🤖 AI Artifact Explanation
+
+Users can open an artifact page and click **Explain with AI** to get:
+
+- Summary
+- Historical context
+- Cultural significance
+- Learning points
+- Further exploration ideas
+
+Set these variables in `.env.local` and deployment env settings:
+
+```bash
+AI_PROVIDER=groq
+GROQ_API_KEY=your_groq_api_key_here
+GROQ_MODEL=llama-3.1-8b-instant
+
+# Optional API hardening
+AI_RATE_LIMIT_MAX=20
+AI_RATE_LIMIT_WINDOW_MS=60000
+AI_CACHE_TTL_MS=21600000
+```
+
+Notes:
+
+- `AI_PROVIDER=groq` is used for HeriNest AI.
+- AI explanations are cached in-memory on the server process for faster repeat responses.
+
+The AI request is handled server-side through `/api/artifact-explain` so keys are not exposed in the client.
 
 ---
 

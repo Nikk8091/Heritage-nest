@@ -1,7 +1,6 @@
 "use client";
-import { useState, useEffect } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import Link from "next/link";
 import { fetchFilteredItems } from "../../lib/dbService";
 import { CATEGORIES, INDIAN_STATES, ART_FORMS } from "../../lib/constants";
 import ArtCard from "../../components/ArtCard";
@@ -13,7 +12,7 @@ const CATEGORY_ICONS = {
   "Textile": "🪡", "Sculpture": "🗿",
 };
 
-export default function CategoriesPage() {
+function CategoriesPageContent() {
   const searchParams = useSearchParams();
   const initialCat = searchParams.get("cat") || "";
 
@@ -144,5 +143,13 @@ export default function CategoriesPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function CategoriesPage() {
+  return (
+    <Suspense fallback={<div className="loading-spinner" style={{ marginTop: 80 }} />}>
+      <CategoriesPageContent />
+    </Suspense>
   );
 }

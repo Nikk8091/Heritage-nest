@@ -17,6 +17,58 @@
   color: #2c3e50;
 }
 
+.toolbar {
+  display: grid;
+  grid-template-columns: 1fr 200px;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.searchInput,
+.filterSelect {
+  border: 1px solid #d0d7de;
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-size: 0.92rem;
+}
+
+.searchInput:focus,
+.filterSelect:focus {
+  outline: none;
+  border-color: #3498db;
+  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.16);
+}
+
+.bulkBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.selectAllLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  color: #34495e;
+}
+
+.bulkDeleteBtn {
+  border: none;
+  background: #c0392b;
+  color: white;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.bulkDeleteBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .addBtn {
   background-color: #27ae60;
   color: white;
@@ -48,6 +100,7 @@
 .table td {
   padding: 12px;
   border-bottom: 1px solid #ecf0f1;
+  vertical-align: middle;
 }
 
 .table tbody tr:hover {
@@ -57,6 +110,67 @@
 .actions {
   display: flex;
   gap: 10px;
+}
+
+.mediaBadge {
+  display: inline-block;
+  text-transform: uppercase;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 4px 8px;
+  border-radius: 999px;
+  color: #2c3e50;
+  background: #ecf0f1;
+}
+
+.mediaBadge.image {
+  background: #d6eaf8;
+  color: #1b4f72;
+}
+
+.mediaBadge.video {
+  background: #fdebd0;
+  color: #7e5109;
+}
+
+.mediaBadge.audio {
+  background: #d5f5e3;
+  color: #145a32;
+}
+
+.shortTag {
+  margin-left: 6px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #fff;
+  background: #8e44ad;
+  padding: 4px 8px;
+  border-radius: 999px;
+}
+
+.statusBadge {
+  display: inline-block;
+  text-transform: capitalize;
+  font-size: 0.72rem;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 4px 10px;
+}
+
+.approved {
+  background: #d5f5e3;
+  color: #145a32;
+}
+
+.pending {
+  background: #fdebd0;
+  color: #7e5109;
+}
+
+.rejected {
+  background: #fadbd8;
+  color: #922b21;
 }
 
 .editBtn {
@@ -96,6 +210,16 @@
 }
 
 @media (max-width: 768px) {
+  .toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .bulkBar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
   .table {
     font-size: 12px;
   }

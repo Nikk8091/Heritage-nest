@@ -52,6 +52,11 @@ export default function AdminLayout({ children }) {
             </Link>
           </li>
           <li>
+            <Link href="/admin/review" className={styles.navLink}>
+              ✅ Review Queue
+            </Link>
+          </li>
+          <li>
             <Link href="/" className={styles.navLink}>
               🔙 Back to Site
             </Link>

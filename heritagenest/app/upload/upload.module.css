@@ -73,6 +73,11 @@
   position: relative;
 }
 .previewMedia { width: 100%; max-height: 340px; object-fit: cover; display: block; }
+.audioPreview {
+  width: 100%;
+  padding: 40px 16px;
+  background: #fff;
+}
 .changeFile {
   position: absolute;
   bottom: 0; left: 0; right: 0;
@@ -153,6 +158,28 @@
 .field textarea { resize: vertical; }
 
 .hint { font-size: 0.78rem; color: var(--text-light); margin-top: 2px; }
+
+.shortOption {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  background: #fffdf9;
+}
+
+.shortToggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-dark);
+}
+
+.shortHint {
+  margin: 8px 0 0;
+  font-size: 0.8rem;
+  color: var(--text-light);
+}
 
 .row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 

@@ -13,6 +13,8 @@ export default function HomePage() {
   const [hasMore, setHasMore] = useState(true);
   const [search, setSearch] = useState("");
   const [searching, setSearching] = useState(false);
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [filters, setFilters] = useState({ state: "", art_form: "", category: "" });
 
   const loadItems = useCallback(async (reset = false) => {
@@ -40,9 +42,30 @@ export default function HomePage() {
     loadItems(true);
   }, [filters]);
 
+  useEffect(() => {
+    const term = search.trim();
+    if (!term) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      const result = await searchArtItems(term);
+      const uniqueTitles = Array.from(
+        new Set((result.items || []).map((item) => item.title).filter(Boolean))
+      ).slice(0, 6);
+      setSuggestions(uniqueTitles);
+      setShowSuggestions(true);
+    }, 350);
+
+    return () => clearTimeout(timer);
+  }, [search]);
+
   const handleSearch = async (e) => {
     e.preventDefault();
     if (!search.trim()) return loadItems(true);
+    setShowSuggestions(false);
     setSearching(true);
     setLoading(true);
     const result = await searchArtItems(search.trim());
@@ -54,8 +77,24 @@ export default function HomePage() {
 
   const clearSearch = () => {
     setSearch("");
+    setSuggestions([]);
+    setShowSuggestions(false);
     loadItems(true);
   };
+
+  const handleSuggestionClick = async (suggestion) => {
+    setSearch(suggestion);
+    setShowSuggestions(false);
+    setSearching(true);
+    setLoading(true);
+    const result = await searchArtItems(suggestion);
+    setItems(result.items);
+    setHasMore(false);
+    setLoading(false);
+    setSearching(false);
+  };
+
+  const suggestionChips = ["Madhubani", "Warli", "Folk Music", "Dance", "Tribal Art", "Short Video"];
 
   const handleFilter = (key, val) => {
     setFilters((prev) => ({ ...prev, [key]: val }));
@@ -91,12 +130,41 @@ export default function HomePage() {
               placeholder="Search folk art, dance forms, crafts..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
+              onFocus={() => search.trim() && setShowSuggestions(true)}
             />
             {search && (
               <button type="button" onClick={clearSearch} className={styles.clearBtn}>✕</button>
             )}
             <button type="submit" className={styles.searchBtn}>Search</button>
           </form>
+
+          {showSuggestions && suggestions.length > 0 && (
+            <div className={styles.suggestionBox}>
+              {suggestions.map((suggestion) => (
+                <button
+                  key={suggestion}
+                  type="button"
+                  className={styles.suggestionItem}
+                  onClick={() => handleSuggestionClick(suggestion)}
+                >
+                  {suggestion}
+                </button>
+              ))}
+            </div>
+          )}
+
+          <div className={styles.suggestionChips}>
+            {suggestionChips.map((chip) => (
+              <button
+                key={chip}
+                type="button"
+                className={styles.chipBtn}
+                onClick={() => handleSuggestionClick(chip)}
+              >
+                {chip}
+              </button>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -131,7 +199,7 @@ export default function HomePage() {
               {search ? `Results for "${search}"` : "Explore Folk Arts"}
             </h2>
             <p className="section-subtitle">
-              {items.length} item{items.length !== 1 ? "s" : ""} found
+              {searching ? "Searching..." : `${items.length} item${items.length !== 1 ? "s" : ""} found`}
             </p>
           </div>
 
