@@ -30,6 +30,12 @@ export default function Footer() {
           <Link href="/categories?cat=Craft">Craft</Link>
           <Link href="/categories?cat=Heritage Site">Heritage Sites</Link>
         </div>
+        <div className={styles.links}>
+          <h4>Contact</h4>
+          <a href="mailto:nikk4645@gmail.com">Overall Manager: nikk4645@gmail.com</a>
+          <a href="mailto:swetashr08@gmail.com">Tech Support: swetashr08@gmail.com</a>
+          <a href="mailto:swetashr08@gmail.com">General Queries</a>
+        </div>
       </div>
       <div className={styles.bottom}>
         <p>© 2024 HeritageNest. Built to preserve India's intangible cultural heritage.</p>

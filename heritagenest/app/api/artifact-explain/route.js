@@ -44,6 +44,36 @@ function normalizeQuestionInput(question) {
   return raw;
 }
 
+function isCulturalTopicQuestion(question) {
+  const text = String(question || "").toLowerCase();
+  const culturalKeywords = [
+    "art",
+    "artifact",
+    "culture",
+    "cultural",
+    "heritage",
+    "history",
+    "folk",
+    "craft",
+    "painting",
+    "music",
+    "audio",
+    "song",
+    "dance",
+    "video",
+    "short",
+    "tradition",
+    "community",
+    "festival",
+    "textile",
+    "sculpture",
+    "india",
+    "indian",
+  ];
+
+  return culturalKeywords.some((keyword) => text.includes(keyword));
+}
+
 async function callFastApi({ item, question, history }) {
   const response = await fetch(FASTAPI_CHATBOT_URL, {
     method: "POST",
@@ -77,7 +107,7 @@ async function callFastApi({ item, question, history }) {
   return { ok: true, data };
 }
 
-async function callGroqFallback({ item, question, history }) {
+async function callGroqFallback({ item, question, history, chatScope }) {
   const groqKey = process.env.GROQ_API_KEY;
   const groqModel = process.env.GROQ_MODEL || "llama-3.1-8b-instant";
 
@@ -91,8 +121,11 @@ async function callGroqFallback({ item, question, history }) {
   }
 
   const systemRules =
-    "You are HeriNest AI, an educational cultural heritage assistant. You can answer ONLY about the currently opened artifact context. " +
-    "If the user asks about another artifact or unrelated topic, reply exactly: 'I can only explain the currently opened art card. Please open another art card to get info about another artifact.'";
+    chatScope === "home"
+      ? "You are HeriNest AI, an educational assistant for cultural art, audio, video, and history. " +
+        "Answer only cultural heritage topics. If user asks anything else, reply exactly: 'As per guidelines I am not allow to do that.'"
+      : "You are HeriNest AI, an educational cultural heritage assistant. You can answer ONLY about the currently opened artifact context. " +
+        "If the user asks about another artifact or unrelated topic, reply exactly: 'I can only explain the currently opened art card. Please open another art card to get info about another artifact.'";
 
   const context = `Current artifact context (use only this context for answers):\n${buildArtifactContext(item)}`;
 
@@ -160,7 +193,7 @@ async function callGroqFallback({ item, question, history }) {
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { item, question, history } = body || {};
+    const { item, question, history, chatScope } = body || {};
 
     if (!item?.title) {
       return NextResponse.json({ error: "Missing artifact data." }, { status: 400 });
@@ -172,11 +205,22 @@ export async function POST(request) {
 
     const normalizedQuestion = normalizeQuestionInput(question);
 
+    if (chatScope === "home" && !isCulturalTopicQuestion(normalizedQuestion)) {
+      return NextResponse.json(
+        {
+          answer: "As per guidelines I am not allow to do that.",
+          source: "scope-guard",
+          model: "rule-based",
+        },
+        { status: 200 }
+      );
+    }
+
     let result = null;
     try {
       result = await callFastApi({ item, question: normalizedQuestion, history });
     } catch {
-      result = await callGroqFallback({ item, question: normalizedQuestion, history });
+      result = await callGroqFallback({ item, question: normalizedQuestion, history, chatScope });
     }
 
     if (!result?.ok) {

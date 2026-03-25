@@ -2,6 +2,7 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signInWithPopup,
+  signInWithRedirect,
   GoogleAuthProvider,
   signOut,
   onAuthStateChanged,
@@ -10,6 +11,7 @@ import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "./firebase";
 
 const googleProvider = new GoogleAuthProvider();
+googleProvider.setCustomParameters({ prompt: "select_account" });
 
 // Register with email/password
 export async function registerWithEmail(email, password, displayName) {
@@ -35,6 +37,12 @@ export async function loginWithEmail(email, password) {
 
 // Google Sign-In
 export async function loginWithGoogle() {
+  const mapError = (error) => ({
+    user: null,
+    error: error?.message || "Google sign-in failed",
+    code: error?.code || "auth/unknown",
+  });
+
   try {
     const userCredential = await signInWithPopup(auth, googleProvider);
     const user = userCredential.user;
@@ -42,9 +50,25 @@ export async function loginWithGoogle() {
     if (!userDoc.exists()) {
       await createUserDocument(user, user.displayName);
     }
-    return { user, error: null };
+    return { user, error: null, method: "popup" };
   } catch (error) {
-    return { user: null, error: error.message };
+    const popupBlockedCodes = new Set([
+      "auth/popup-blocked",
+      "auth/popup-closed-by-user",
+      "auth/cancelled-popup-request",
+      "auth/operation-not-supported-in-this-environment",
+    ]);
+
+    if (popupBlockedCodes.has(error?.code)) {
+      try {
+        await signInWithRedirect(auth, googleProvider);
+        return { user: null, error: null, method: "redirect" };
+      } catch (redirectError) {
+        return mapError(redirectError);
+      }
+    }
+
+    return mapError(error);
   }
 }
 

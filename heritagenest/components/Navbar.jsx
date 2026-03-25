@@ -32,6 +32,7 @@ export default function Navbar() {
         <div className={`${styles.links} ${menuOpen ? styles.open : ""}`}>
           <Link href="/" className={`${styles.link} ${isActive("/") ? styles.activeLink : ""}`} onClick={() => setMenuOpen(false)}>Home</Link>
           <Link href="/categories" className={`${styles.link} ${isActive("/categories") ? styles.activeLink : ""}`} onClick={() => setMenuOpen(false)}>Categories</Link>
+          <Link href="/audio" className={`${styles.link} ${isActive("/audio") ? styles.activeLink : ""}`} onClick={() => setMenuOpen(false)}>Audio</Link>
           <Link href="/shorts" className={`${styles.link} ${isActive("/shorts") ? styles.activeLink : ""}`} onClick={() => setMenuOpen(false)}>Shorts</Link>
           {user && (
             <Link href="/upload" className={`${styles.link} ${isActive("/upload") ? styles.activeLink : ""}`} onClick={() => setMenuOpen(false)}>Upload</Link>

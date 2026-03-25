@@ -41,6 +41,8 @@ export async function createArtItem(data, userId) {
       media_type: data.media_type, // "image" | "video"
       is_short: data.media_type === "video" ? Boolean(data.is_short) : false,
       duration_seconds: data.duration_seconds || null,
+      language: data.language || "",
+      performer_name: data.performer_name || "",
       moderation_status: data.moderation_status || "pending",
       reviewed_at: null,
       reviewed_by: null,
@@ -284,6 +286,40 @@ export async function fetchShortVideos() {
         .filter((item) => item.media_type === "video" && item.is_short === true)
         .slice(0, 24);
 
+      return { items, error: null };
+    } catch (fallbackError) {
+      return { items: [], error: fallbackError.message || error.message };
+    }
+  }
+}
+
+export async function fetchAudioItems() {
+  try {
+    const directQuery = query(
+      collection(db, "artItems"),
+      where("media_type", "==", "audio"),
+      orderBy("created_at", "desc"),
+      limit(60)
+    );
+
+    const snapshot = await getDocs(directQuery);
+    const items = snapshot.docs
+      .map((d) => ({ id: d.id, ...d.data() }))
+      .filter(isPubliclyVisible);
+
+    return { items, error: null };
+  } catch (error) {
+    try {
+      const fallbackQuery = query(
+        collection(db, "artItems"),
+        orderBy("created_at", "desc"),
+        limit(120)
+      );
+      const snapshot = await getDocs(fallbackQuery);
+      const items = snapshot.docs
+        .map((d) => ({ id: d.id, ...d.data() }))
+        .filter(isPubliclyVisible)
+        .filter((item) => item.media_type === "audio");
       return { items, error: null };
     } catch (fallbackError) {
       return { items: [], error: fallbackError.message || error.message };

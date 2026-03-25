@@ -28,7 +28,11 @@ function UploadPageContent() {
   const [dragOver, setDragOver] = useState(false);
   const [isShort, setIsShort] = useState(false);
   const [videoDuration, setVideoDuration] = useState(0);
+  const [uploadMode, setUploadMode] = useState("art");
   const shortIntent = searchParams.get("short") === "1";
+  const audioIntent = searchParams.get("type") === "audio";
+
+  const isAudioMode = uploadMode === "audio";
 
   const isVideoFile = Boolean(file?.type?.startsWith("video"));
   const shortDefaults = {
@@ -47,8 +51,13 @@ function UploadPageContent() {
   useEffect(() => {
     if (shortIntent) {
       setIsShort(true);
+      setUploadMode("art");
     }
-  }, [shortIntent]);
+    if (audioIntent) {
+      setUploadMode("audio");
+      setIsShort(false);
+    }
+  }, [shortIntent, audioIntent]);
 
   if (!user) return null;
 
@@ -76,7 +85,13 @@ function UploadPageContent() {
     if (!selectedFile) return;
     setError("");
 
-    if (selectedFile.type.startsWith("video")) {
+    if (isAudioMode && !selectedFile.type.startsWith("audio")) {
+      setFile(null);
+      setPreview(null);
+      return setError("Audio mode accepts audio files only (MP3, WAV, OGG, M4A).");
+    }
+
+    if (selectedFile.type.startsWith("video") && !isAudioMode) {
       try {
         const duration = await getVideoDuration(selectedFile);
         setVideoDuration(duration || 0);
@@ -90,7 +105,7 @@ function UploadPageContent() {
         setPreview(null);
         return setError("Unable to process video. Try another file.");
       }
-    } else {
+    } else if (!selectedFile.type.startsWith("video")) {
       setIsShort(false);
       setVideoDuration(0);
     }
@@ -114,7 +129,18 @@ function UploadPageContent() {
     if (!form.title && !isShort) {
       return setError("Title is required.");
     }
+    if (isAudioMode && !file.type.startsWith("audio")) {
+      return setError("Please upload an audio file.");
+    }
+    if (isAudioMode && !form.description?.trim()) {
+      return setError("Please add a short description for audio.");
+    }
     if (!isShort && (!form.state || !form.category)) {
+      if (!isAudioMode) {
+        return setError("State and Category are required.");
+      }
+    }
+    if (isAudioMode && !form.state) {
       return setError("State and Category are required.");
     }
     if (isShort && !file.type.startsWith("video")) {
@@ -145,7 +171,18 @@ function UploadPageContent() {
       .map((t) => t.trim().toLowerCase())
       .filter(Boolean);
 
-    const payload = isShort
+    const payload = isAudioMode
+      ? {
+          ...form,
+          title: form.title?.trim(),
+          description: form.description?.trim(),
+          category: "Music",
+          art_form: form.art_form?.trim() || "Oral Tradition",
+          tags,
+          language: form.language?.trim() || "",
+          performer_name: form.performer_name?.trim() || "",
+        }
+      : isShort
       ? {
           ...form,
           title: form.title?.trim() || `Short by ${user.displayName || "creator"}`,
@@ -171,7 +208,7 @@ function UploadPageContent() {
         media_type: mediaType,
         tags: payload.tags,
         moderation_status: "pending",
-        is_short: isShort && mediaType === "video",
+        is_short: !isAudioMode && isShort && mediaType === "video",
         duration_seconds: mediaType === "video" && Number.isFinite(videoDuration)
           ? Math.round(videoDuration)
           : null,
@@ -196,6 +233,30 @@ function UploadPageContent() {
           <p className={styles.subtitle}>
             Share traditional folk art, crafts, and performances with the world
           </p>
+          <div className={styles.modeSwitch}>
+            <button
+              type="button"
+              className={`${styles.modeBtn} ${!isAudioMode ? styles.modeBtnActive : ""}`}
+              onClick={() => {
+                setUploadMode("art");
+                setIsShort(shortIntent);
+                setError("");
+              }}
+            >
+              Upload Artcard
+            </button>
+            <button
+              type="button"
+              className={`${styles.modeBtn} ${isAudioMode ? styles.modeBtnActive : ""}`}
+              onClick={() => {
+                setUploadMode("audio");
+                setIsShort(false);
+                setError("");
+              }}
+            >
+              Upload Audio
+            </button>
+          </div>
         </div>
 
         {success ? (
@@ -219,7 +280,7 @@ function UploadPageContent() {
                 <input
                   ref={fileRef}
                   type="file"
-                  accept="image/*,video/*,audio/*"
+                  accept={isAudioMode ? "audio/*" : "image/*,video/*,audio/*"}
                   hidden
                   onChange={(e) => handleFile(e.target.files[0])}
                 />
@@ -238,8 +299,17 @@ function UploadPageContent() {
                   <div className={styles.dropPrompt}>
                     <span className={styles.dropIcon}>📁</span>
                     <p className={styles.dropText}>Drag & drop or click to upload</p>
-                    <p className={styles.dropHint}>Images (JPG, PNG, WebP) · Videos (MP4, WebM) · Audio (MP3, WAV, OGG)</p>
-                    <p className={styles.dropHint}>Max: 10MB image · 100MB video · 20MB audio</p>
+                    {isAudioMode ? (
+                      <>
+                        <p className={styles.dropHint}>Audio formats: MP3, WAV, OGG, M4A</p>
+                        <p className={styles.dropHint}>Max size: 20MB</p>
+                      </>
+                    ) : (
+                      <>
+                        <p className={styles.dropHint}>Images (JPG, PNG, WebP) · Videos (MP4, WebM) · Audio (MP3, WAV, OGG)</p>
+                        <p className={styles.dropHint}>Max: 10MB image · 100MB video · 20MB audio</p>
+                      </>
+                    )}
                   </div>
                 )}
               </div>
@@ -265,7 +335,13 @@ function UploadPageContent() {
                   name="title"
                   value={form.title}
                   onChange={handle}
-                  placeholder={isShort ? "Add a short caption (optional)" : "e.g. Madhubani Fish Painting"}
+                  placeholder={
+                    isAudioMode
+                      ? "e.g. Bhajan from Varanasi"
+                      : isShort
+                        ? "Add a short caption (optional)"
+                        : "e.g. Madhubani Fish Painting"
+                  }
                   required={!isShort}
                 />
               </div>
@@ -278,18 +354,73 @@ function UploadPageContent() {
                   onChange={handle}
                   rows={isShort ? 2 : 3}
                   placeholder={
-                    isShort
+                    isAudioMode
+                      ? "Tell us about this audio, style, language, and cultural context"
+                      : isShort
                       ? "Say something about this short (optional)"
                       : "Describe the art, its significance, history..."
                   }
                 />
               </div>
 
-              {isShort ? (
+              {isAudioMode && (
+                <>
+                  <div className={styles.row}>
+                    <div className={styles.field}>
+                      <label>State <span className={styles.req}>*</span></label>
+                      <select name="state" value={form.state} onChange={handle} required>
+                        <option value="">Select State</option>
+                        {INDIAN_STATES.map((s) => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                    </div>
+                    <div className={styles.field}>
+                      <label>Language</label>
+                      <input
+                        name="language"
+                        value={form.language || ""}
+                        onChange={handle}
+                        placeholder="e.g. Hindi, Bhojpuri, Assamese"
+                      />
+                    </div>
+                  </div>
+
+                  <div className={styles.row}>
+                    <div className={styles.field}>
+                      <label>Performer / Narrator</label>
+                      <input
+                        name="performer_name"
+                        value={form.performer_name || ""}
+                        onChange={handle}
+                        placeholder="Who is performing this audio?"
+                      />
+                    </div>
+                    <div className={styles.field}>
+                      <label>Community / Tribe</label>
+                      <select name="community" value={form.community} onChange={handle}>
+                        <option value="">Select Community</option>
+                        {COMMUNITIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className={styles.field}>
+                    <label>Tags</label>
+                    <input
+                      name="tags"
+                      value={form.tags}
+                      onChange={handle}
+                      placeholder="e.g. folk song, devotional, oral tradition"
+                    />
+                    <span className={styles.hint}>Separate tags with commas</span>
+                  </div>
+                </>
+              )}
+
+              {!isAudioMode && isShort ? (
                 <div className={styles.shortHint}>
                   Quick Shorts mode is on. Extra metadata will be auto-filled to keep upload simple.
                 </div>
-              ) : (
+              ) : !isAudioMode ? (
                 <>
                   <div className={styles.row}>
                     <div className={styles.field}>
@@ -341,11 +472,11 @@ function UploadPageContent() {
                     <span className={styles.hint}>Separate tags with commas</span>
                   </div>
                 </>
-              )}
+              ) : null}
 
               {error && <p className="error-msg">{error}</p>}
 
-              {isVideoFile && (
+              {!isAudioMode && isVideoFile && (
                 <div className={styles.shortOption}>
                   <label className={styles.shortToggle}>
                     <input
@@ -371,7 +502,7 @@ function UploadPageContent() {
               )}
 
               <button type="submit" className={styles.submitBtn} disabled={uploading}>
-                {uploading ? `Uploading... ${progress}%` : "Upload Content 🚀"}
+                {uploading ? `Uploading... ${progress}%` : isAudioMode ? "Upload Audio 🎵" : "Upload Content 🚀"}
               </button>
             </div>
           </form>

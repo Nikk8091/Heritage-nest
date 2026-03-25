@@ -10,24 +10,70 @@
   background: linear-gradient(180deg, #2c3e50 0%, #34495e 100%);
   color: white;
   padding: 0;
-  position: fixed;
-  top: 0;
+  position: sticky;
+  top: var(--nav-height);
   left: 0;
-  height: 100vh;
+  height: calc(100vh - var(--nav-height));
   overflow-y: auto;
   box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
-  z-index: 1000;
+  z-index: 60;
+  transition: width 0.25s ease;
+  flex-shrink: 0;
 }
 
-.logo {
-  padding: 25px 20px;
-  font-size: 24px;
-  font-weight: bold;
+.sidebarCollapsed {
+  width: 88px;
+}
+
+.sidebarHeader {
+  padding: 18px 14px;
   border-bottom: 2px solid rgba(255, 255, 255, 0.1);
   margin-bottom: 20px;
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.logo {
+  font-size: 24px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
   gap: 10px;
+  min-width: 0;
+}
+
+.logoIcon {
+  flex-shrink: 0;
+}
+
+.logoText {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebarToggleBtn {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.08);
+  color: #ecf0f1;
+  font-size: 20px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sidebarToggleBtn:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.hiddenText {
+  display: none;
 }
 
 .navList {
@@ -49,10 +95,30 @@
   font-weight: 500;
 }
 
+.navIcon {
+  flex-shrink: 0;
+  width: 20px;
+  text-align: center;
+}
+
+.navText {
+  white-space: nowrap;
+}
+
+.sidebarCollapsed .navLink {
+  justify-content: center;
+  padding-left: 0;
+  padding-right: 0;
+}
+
 .navLink:hover {
   background-color: rgba(255, 255, 255, 0.1);
   border-left-color: #3498db;
   padding-left: 18px;
+}
+
+.sidebarCollapsed .navLink:hover {
+  padding-left: 0;
 }
 
 .navLink.active {
@@ -62,11 +128,14 @@
 }
 
 .content {
-  margin-left: 280px;
   flex: 1;
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+}
+
+.contentExpanded {
+  margin-left: 0;
 }
 
 .mainContent {
@@ -157,6 +226,25 @@
     position: relative;
     width: 100%;
     height: auto;
+    top: 0;
+  }
+
+  .sidebarCollapsed {
+    width: 100%;
+  }
+
+  .hiddenText {
+    display: inline;
+  }
+
+  .sidebarCollapsed .navLink {
+    justify-content: flex-start;
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .sidebarCollapsed .navLink:hover {
+    padding-left: 14px;
   }
 
   .content {

@@ -6,6 +6,20 @@ import { useAuth } from "../../../context/AuthContext";
 import { loginWithEmail, loginWithGoogle, registerWithEmail } from "../../../lib/authService";
 import styles from "./auth.module.css";
 
+function mapGoogleErrorMessage(errorMessage = "") {
+  const message = String(errorMessage).toLowerCase();
+  if (message.includes("popup") || message.includes("cancelled-popup-request")) {
+    return "Popup was blocked, so we tried redirect sign-in. Please complete Google sign-in and return to this page.";
+  }
+  if (message.includes("unauthorized-domain") || message.includes("unauthorized")) {
+    return "This domain is not authorized in Firebase Authentication. Add your Vercel domain in Firebase Auth settings.";
+  }
+  if (message.includes("operation-not-allowed")) {
+    return "Google provider is disabled in Firebase Authentication. Enable it in Firebase Console > Authentication > Sign-in method.";
+  }
+  return errorMessage || "Google sign-in failed. Please try again.";
+}
+
 export default function LoginPage() {
   const router = useRouter();
   const { user, userDoc } = useAuth();
@@ -73,10 +87,16 @@ export default function LoginPage() {
     try {
       console.log("🔐 Attempting Google sign-in...");
       const result = await loginWithGoogle();
+
+      if (result.method === "redirect") {
+        console.log("↪️ Popup unavailable, switched to redirect sign-in");
+        setError("Redirecting to Google sign-in...");
+        return;
+      }
       
       if (result.error) {
         console.error("❌ Google auth error:", result.error);
-        setError(result.error);
+        setError(mapGoogleErrorMessage(result.error));
         setLoading(false);
         return;
       }

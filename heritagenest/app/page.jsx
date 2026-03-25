@@ -1,9 +1,16 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import ArtCard from "../components/ArtCard";
 import { fetchArtItems, fetchFilteredItems, searchArtItems } from "../lib/dbService";
 import { INDIAN_STATES, CATEGORIES, ART_FORMS } from "../lib/constants";
 import styles from "./page.module.css";
+
+const createHomeWelcomeMessage = () => ({
+  role: "assistant",
+  content:
+    "I am HeriNest AI. Ask me about cultural art, crafts, audio traditions, video traditions, and art history from any category.",
+  timestamp: Date.now(),
+});
 
 export default function HomePage() {
   const [items, setItems] = useState([]);
@@ -16,6 +23,22 @@ export default function HomePage() {
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [filters, setFilters] = useState({ state: "", art_form: "", category: "" });
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState("");
+  const [aiMessages, setAiMessages] = useState([createHomeWelcomeMessage()]);
+  const [aiQuestion, setAiQuestion] = useState("");
+  const [chatOpen, setChatOpen] = useState(true);
+  const [chatSidebarWidth, setChatSidebarWidth] = useState(390);
+  const [isResizingChatSidebar, setIsResizingChatSidebar] = useState(false);
+  const chatMessagesRef = useRef(null);
+
+  const nonAudioItems = (list = []) => list.filter((item) => item?.media_type !== "audio");
+
+  const quickPrompts = [
+    "Explain Warli art style in simple words",
+    "How are folk songs and oral traditions preserved?",
+    "What is the cultural importance of regional dance forms?",
+  ];
 
   const loadItems = useCallback(async (reset = false) => {
     if (reset) setLoading(true);
@@ -28,9 +51,9 @@ export default function HomePage() {
       : await fetchArtItems(cursor);
 
     if (reset) {
-      setItems(result.items);
+      setItems(nonAudioItems(result.items));
     } else {
-      setItems((prev) => [...prev, ...result.items]);
+      setItems((prev) => [...prev, ...nonAudioItems(result.items)]);
     }
     setLastDoc(result.lastVisible);
     setHasMore(result.items.length === 12);
@@ -69,7 +92,7 @@ export default function HomePage() {
     setSearching(true);
     setLoading(true);
     const result = await searchArtItems(search.trim());
-    setItems(result.items);
+    setItems(nonAudioItems(result.items));
     setHasMore(false);
     setLoading(false);
     setSearching(false);
@@ -88,7 +111,7 @@ export default function HomePage() {
     setSearching(true);
     setLoading(true);
     const result = await searchArtItems(suggestion);
-    setItems(result.items);
+    setItems(nonAudioItems(result.items));
     setHasMore(false);
     setLoading(false);
     setSearching(false);
@@ -111,8 +134,113 @@ export default function HomePage() {
     loadItems(true);
   };
 
+  const formatMessageTime = (timestamp) => {
+    if (!timestamp) return "";
+    return new Date(timestamp).toLocaleTimeString("en-IN", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  const handleClearHomeChat = () => {
+    setAiMessages([createHomeWelcomeMessage()]);
+    setAiError("");
+    setAiQuestion("");
+  };
+
+  const handleAskHomeAi = async (customQuestion) => {
+    const question = (customQuestion || aiQuestion).trim();
+    if (!question) return;
+
+    const userMessage = { role: "user", content: question, timestamp: Date.now() };
+    const nextHistory = [...aiMessages, userMessage].slice(-8);
+
+    setAiMessages((prev) => [...prev, userMessage]);
+    setAiQuestion("");
+    setAiLoading(true);
+    setAiError("");
+
+    try {
+      const response = await fetch("/api/artifact-explain", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chatScope: "home",
+          item: {
+            title: "HeriNest Cultural Knowledge Base",
+            description:
+              "General cultural archive knowledge across visual art, music, dance, craft, oral traditions, short video heritage content, and regional history.",
+            state: "India",
+            district: "",
+            community: "",
+            category: "All Categories",
+            art_form: "Multiple",
+            tags: ["culture", "art", "audio", "video", "history"],
+            media_type: "mixed",
+          },
+          question,
+          history: nextHistory,
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        setAiError(data?.error || "Failed to generate response.");
+      } else {
+        setAiMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            content: data?.answer || "I could not generate a response right now.",
+            timestamp: Date.now(),
+          },
+        ]);
+      }
+    } catch (error) {
+      setAiError(error.message || "Network error while requesting AI response.");
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!chatMessagesRef.current) return;
+    chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
+  }, [aiMessages, aiLoading]);
+
+  useEffect(() => {
+    if (!isResizingChatSidebar) return;
+
+    const handleMouseMove = (event) => {
+      const rightGap = 0;
+      const minWidth = 350;
+      const maxWidth = 580;
+      const nextWidth = window.innerWidth - event.clientX - rightGap;
+      const clampedWidth = Math.max(minWidth, Math.min(maxWidth, nextWidth));
+      setChatSidebarWidth(clampedWidth);
+    };
+
+    const handleMouseUp = () => {
+      setIsResizingChatSidebar(false);
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [isResizingChatSidebar]);
+
   return (
-    <div>
+    <div
+      className={`${styles.homePageWrap} ${chatOpen ? styles.homePageWithChatOpen : ""}`}
+      style={{
+        "--home-chat-sidebar-width": `${chatSidebarWidth}px`,
+      }}
+    >
+      <div className={styles.homeContentWrap}>
       {/* ── Hero ─────────────────────────────────────────────── */}
       <section className={styles.hero}>
         <div className={styles.heroOverlay} />
@@ -231,6 +359,127 @@ export default function HomePage() {
           )}
         </div>
       </section>
+      </div>
+
+      {chatOpen ? (
+        <aside className={styles.homeChatSidebar} style={{ width: `${chatSidebarWidth}px` }}>
+          <div
+            className={styles.homeSidebarResizeHandle}
+            onMouseDown={() => setIsResizingChatSidebar(true)}
+            role="separator"
+            aria-orientation="vertical"
+            aria-label="Resize home chatbot sidebar"
+            title="Drag to resize"
+          />
+          <div className={styles.homeAiSection}>
+            <div className={styles.homeAiHeader}>
+              <div className={styles.homeAiHeaderTitleRow}>
+                <button
+                  type="button"
+                  onClick={() => setChatOpen(false)}
+                  className={styles.homeChatHeaderToggleBtn}
+                  aria-label="Collapse HeriNest AI chatbot"
+                  title="Collapse chatbot"
+                >
+                  −
+                </button>
+                <h3>HeriNest AI Chatbot</h3>
+              </div>
+              <div className={styles.homeAiActions}>
+                <button
+                  type="button"
+                  onClick={handleClearHomeChat}
+                  className={styles.homeAiGhostBtn}
+                  disabled={aiLoading}
+                >
+                  Clear Chat
+                </button>
+              </div>
+            </div>
+
+            {aiError && <p className={styles.homeAiError}>{aiError}</p>}
+
+            <div className={styles.homeChatCard}>
+              <div className={styles.homeChatMessages} ref={chatMessagesRef}>
+                <div className={styles.homeChatGuide}>
+                  <p className={styles.homeChatGuideText}>
+                    Ask about cultural art, audio, video, and history. If asked outside these topics, I will refuse per guidelines.
+                  </p>
+                  <div className={styles.homeChatGuidePrompts}>
+                    {quickPrompts.map((prompt) => (
+                      <button
+                        key={prompt}
+                        type="button"
+                        onClick={() => handleAskHomeAi(prompt)}
+                        className={styles.homeQuickPromptBtn}
+                        disabled={aiLoading}
+                      >
+                        {prompt}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {aiMessages.map((msg, index) => (
+                  <div
+                    key={`home-msg-${index}`}
+                    className={`${styles.homeChatMessage} ${
+                      msg.role === "user" ? styles.homeUserMessage : styles.homeAssistantMessage
+                    }`}
+                  >
+                    <span className={styles.homeChatRole}>
+                      {msg.role === "user" ? "You" : "HeriNest AI"}
+                    </span>
+                    <p>{msg.content}</p>
+                    <span className={styles.homeChatTime}>{formatMessageTime(msg.timestamp)}</span>
+                  </div>
+                ))}
+                {aiLoading && <p className={styles.homeTyping}>HeriNest AI is typing...</p>}
+              </div>
+
+              <form
+                className={styles.homeChatInputRow}
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleAskHomeAi();
+                }}
+              >
+                <textarea
+                  value={aiQuestion}
+                  onChange={(e) => setAiQuestion(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      handleAskHomeAi();
+                    }
+                  }}
+                  placeholder="Ask about cultural art, audio, video, or art history"
+                  disabled={aiLoading}
+                  rows={2}
+                />
+                <button
+                  type="submit"
+                  className={styles.homeSendBtn}
+                  disabled={aiLoading || !aiQuestion.trim()}
+                >
+                  Send
+                </button>
+              </form>
+            </div>
+          </div>
+        </aside>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setChatOpen(true)}
+          className={styles.homeChatDockToggleBtn}
+          aria-label="Expand HeriNest AI chatbot"
+          title="Open chatbot"
+        >
+          <span className={styles.homeChatDockIcon}>+</span>
+          <span className={styles.homeChatDockText}>HeriNest AI</span>
+        </button>
+      )}
     </div>
   );
 }
